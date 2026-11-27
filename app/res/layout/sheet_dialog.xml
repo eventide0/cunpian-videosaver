@@ -20,7 +20,7 @@
         android:text="壁纸与模糊"
         android:textSize="16sp"
         android:textStyle="bold"
-        android:textColor="#FFFFFF"/>
+        android:textColor="@color/text_primary"/>
 
     <!-- 选择壁纸 -->
     <LinearLayout
@@ -49,14 +49,14 @@
             android:layout_marginLeft="11dp"
             android:text="选择壁纸（长按恢复默认）"
             android:textSize="13.5sp"
-            android:textColor="#FFFFFF"/>
+            android:textColor="@color/text_primary"/>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="›"
             android:textSize="16sp"
-            android:textColor="#59FFFFFF"/>
+            android:textColor="@color/text_quaternary"/>
     </LinearLayout>
 
     <View
@@ -85,7 +85,7 @@
                 android:layout_weight="1"
                 android:text="玻璃模糊"
                 android:textSize="13sp"
-                android:textColor="#BFFFFFFF"/>
+                android:textColor="@color/text_secondary"/>
             <TextView
                 android:id="@+id/blur_val"
                 android:layout_width="wrap_content"
