@@ -1,9 +1,9 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<ripple xmlns:android="http://schemas.android.com/apk/res/android" android:color="#33FFFFFF">
+<?xml version="1.0" encoding="utf-8"?>
+<ripple xmlns:android="http://schemas.android.com/apk/res/android" android:color="@color/ripple_tint">
     <item>
         <shape android:shape="rectangle">
-            <solid android:color="#2B000000"/>
-            <stroke android:width="1px" android:color="#26FFFFFF"/>
+            <solid android:color="@color/glass_input_fill"/>
+            <stroke android:width="1px" android:color="@color/glass_input_stroke"/>
             <corners android:radius="13dp"/>
         </shape>
     </item>
