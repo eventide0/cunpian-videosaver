@@ -9,11 +9,12 @@
 - 每项独立下载，按钮上显示百分比进度，顶部有「已完成 X/Y · 进行中 Z · 失败 F」汇总
 - 图片缩略图网格，点开全屏、左右滑动切换
 - 「存文案到便签」：把作品文案通过系统分享交给便签 / 备忘录 App
-- 纯 Java 实现，APK 约 90KB
+- 跟随系统深浅色：日间浅色玻璃，夜间暗色
+- 纯 Java 实现，APK 约 94KB
 
 ## 下载
 
-现成 APK 在 [`apk/cunpian-v0.4.6.apk`](apk/cunpian-v0.4.6.apk)（约 94 KB，debug 签名）。点进文件页后选「Download raw file」即可下载安装；Android 8.0 以上。
+到 [Releases 页面](https://github.com/eventide0/cunpian-videosaver/releases) 下载最新版本的 APK 安装即可。Android 8.0 以上。
 
 ## 构建
 
