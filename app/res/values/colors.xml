@@ -1,8 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- 日间（液体玻璃）：壁纸亮，面板白玻璃，文字深色 -->
     <color name="bg">#0A101E</color>
     <color name="blue">#0A84FF</color>
     <color name="blue_bg">#290A84FF</color>
     <color name="blue_stroke">#660A84FF</color>
     <color name="error">#FF6B6B</color>
+
+    <!-- 文本层级（深色，压在白玻璃上） -->
+    <color name="text_primary">#F2000000</color>
+    <color name="text_secondary">#D9000000</color>
+    <color name="text_tertiary">#B3000000</color>
+    <color name="text_quaternary">#8C000000</color>
+    <color name="text_on_blue">#FFFFFFFF</color>
+
+    <!-- 玻璃面板：白底 + 白描边 + 高光 -->
+    <color name="glass_fill">#66FFFFFF</color>
+    <color name="glass_stroke">#66FFFFFF</color>
+    <color name="glass_highlight">#FFFFFFFF</color>
+    <color name="glass_shadow">#1A000000</color>
+    <color name="glass_input_fill">#59FFFFFF</color>
+    <color name="glass_input_stroke">#4DFFFFFF</color>
+    <color name="glass_row_fill">#4DFFFFFF</color>
+    <color name="glass_row_stroke">#33FFFFFF</color>
+    <color name="glass_group_fill">#59FFFFFF</color>
+    <color name="glass_tile_fill">#3DFFFFFF</color>
+    <color name="glass_ghost_fill">#4DFFFFFF</color>
+    <color name="sheet_fill">#B3F2F5FA</color>
+    <color name="ripple_tint">#330A84FF</color>
+    <color name="scrim_top">#1A000000</color>
+    <color name="scrim_bottom">#2E000000</color>
 </resources>
