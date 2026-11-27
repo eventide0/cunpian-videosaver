@@ -11,6 +11,10 @@
 - 「存文案到便签」：把作品文案通过系统分享交给便签 / 备忘录 App
 - 纯 Java 实现，APK 约 90KB
 
+## 下载
+
+现成 APK 在 [`apk/cunpian-v0.4.6.apk`](apk/cunpian-v0.4.6.apk)（约 94 KB，debug 签名）。点进文件页后选「Download raw file」即可下载安装；Android 8.0 以上。
+
 ## 构建
 
 需要 JDK、Android SDK platform 34 与 build-tools（aapt2 / d8 / zipalign / apksigner），并把 `adb` 加入 PATH。

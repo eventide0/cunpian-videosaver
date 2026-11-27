@@ -2,6 +2,7 @@
 app/build/
 app/debug.keystore
 *.apk
+!apk/*.apk
 *.class
 
 # 临时/系统文件
