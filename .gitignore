@@ -1,0 +1,11 @@
+# 构建产物与签名密钥（构建脚本会在缺失时自动生成 debug keystore）
+app/build/
+app/debug.keystore
+*.apk
+*.class
+
+# 临时/系统文件
+*.pyc
+__pycache__/
+Thumbs.db
+.DS_Store

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 玻璃面板（通用）：白 8% 底 + white/15 描边 + 顶边受光高光 + 底边背光暗缘 -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#14FFFFFF"/>
+            <stroke android:width="1dp" android:color="#26FFFFFF"/>
+            <corners android:radius="20dp"/>
+        </shape>
+    </item>
+    <item android:gravity="top" android:height="1dp" android:top="1dp" android:left="16dp" android:right="16dp">
+        <shape android:shape="rectangle"><solid android:color="#2EFFFFFF"/></shape>
+    </item>
+    <item android:gravity="bottom" android:height="1dp" android:bottom="1dp" android:left="16dp" android:right="16dp">
+        <shape android:shape="rectangle"><solid android:color="#2E02060D"/></shape>
+    </item>
+</layer-list>

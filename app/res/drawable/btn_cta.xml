@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- 主 CTA：iOS 系统蓝实心，按钮本身要一眼看见 -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android" android:color="#55FFFFFF">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#0A84FF"/>
+            <corners android:radius="14dp"/>
+        </shape>
+    </item>
+</ripple>

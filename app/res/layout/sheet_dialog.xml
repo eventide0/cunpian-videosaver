@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/mat_sheet">
+
+    <View
+        android:layout_width="36dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/grabber"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="16dp"
+        android:layout_marginTop="12dp"
+        android:text="壁纸与模糊"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF"/>
+
+    <!-- 选择壁纸 -->
+    <LinearLayout
+        android:id="@+id/sheet_pick_wall"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingLeft="16dp"
+        android:paddingRight="12dp"
+        android:paddingTop="13dp"
+        android:paddingBottom="13dp">
+
+        <TextView
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:gravity="center"
+            android:text="🖼"
+            android:textSize="13sp"
+            android:background="@drawable/ic_tile"/>
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginLeft="11dp"
+            android:text="选择壁纸（长按恢复默认）"
+            android:textSize="13.5sp"
+            android:textColor="#FFFFFF"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="›"
+            android:textSize="16sp"
+            android:textColor="#59FFFFFF"/>
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1px"
+        android:layout_marginLeft="16dp"
+        android:background="#1FFFFFFF"/>
+
+    <!-- 模糊滑杆 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingLeft="16dp"
+        android:paddingRight="16dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="18dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="玻璃模糊"
+                android:textSize="13sp"
+                android:textColor="#BFFFFFFF"/>
+            <TextView
+                android:id="@+id/blur_val"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="40px"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="@color/blue"/>
+        </LinearLayout>
+
+        <ProgressBar
+            android:id="@+id/blur_seek"
+            style="@android:style/Widget.Material.ProgressBar.Horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp"
+            android:max="60"
+            android:progress="40"
+            android:progressDrawable="@drawable/slider_bar"/>
+    </LinearLayout>
+</LinearLayout>

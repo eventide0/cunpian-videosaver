@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 输入框玻璃：略强底 + 聚焦态换边框由代码控制 -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="#33FFFFFF">
+    <item>
+        <layer-list>
+            <item>
+                <shape android:shape="rectangle">
+                    <solid android:color="#12FFFFFF"/>
+                    <stroke android:width="1dp" android:color="#22FFFFFF"/>
+                    <corners android:radius="22dp"/>
+                </shape>
+            </item>
+            <item android:gravity="top" android:height="1dp" android:top="1dp" android:left="18dp" android:right="18dp">
+                <shape android:shape="rectangle"><solid android:color="#2EFFFFFF"/></shape>
+            </item>
+            <item android:gravity="bottom" android:height="1dp" android:bottom="1dp" android:left="18dp" android:right="18dp">
+                <shape android:shape="rectangle"><solid android:color="#2E02060D"/></shape>
+            </item>
+        </layer-list>
+    </item>
+</ripple>
