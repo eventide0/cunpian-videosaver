@@ -8,7 +8,7 @@ param([switch]$Install, [switch]$Clean, [string]$Serial)
 $ErrorActionPreference = "Continue"
 
 $App       = $PSScriptRoot
-$ApkName   = "cunpian-v0.4.6.apk"
+$ApkName   = "cunpian-v0.5.0.apk"
 
 # ============ SDK 探测（环境变量优先，兼容多种常见布局）============
 # 优先级：$env:ANDROID_SDK_ROOT → $env:ANDROID_HOME → 常见安装路径 → 脚本同级 sdk/
