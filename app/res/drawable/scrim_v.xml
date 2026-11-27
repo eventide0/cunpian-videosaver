@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 全局 scrim（竖渐变）：顶部留一点壁纸亮部，底部压更暗，保证白字有对比度 -->
+<!-- 全局 scrim（竖渐变）：日间白玻璃亮度由 values/colors.xml 控制，夜间由 values-night/colors.xml 保持原暗度 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
     <gradient
         android:angle="270"
-        android:startColor="#8C000000"
-        android:endColor="#B3000000"/>
+        android:startColor="@color/scrim_top"
+        android:endColor="@color/scrim_bottom"/>
 </shape>
