@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 夜间：保持原来的暗玻璃 + 白字 -->
+    <color name="bg">#0A101E</color>
+    <color name="blue">#0A84FF</color>
+    <color name="blue_bg">#290A84FF</color>
+    <color name="blue_stroke">#660A84FF</color>
+    <color name="error">#FF6B6B</color>
+
+    <color name="text_primary">#FFFFFFFF</color>
+    <color name="text_secondary">#BFFFFFFF</color>
+    <color name="text_tertiary">#73FFFFFF</color>
+    <color name="text_quaternary">#59FFFFFF</color>
+    <color name="text_on_blue">#FFFFFFFF</color>
+
+    <color name="glass_fill">#14FFFFFF</color>
+    <color name="glass_stroke">#26FFFFFF</color>
+    <color name="glass_highlight">#2EFFFFFF</color>
+    <color name="glass_shadow">#2E02060D</color>
+    <color name="glass_input_fill">#12FFFFFF</color>
+    <color name="glass_input_stroke">#22FFFFFF</color>
+    <color name="glass_row_fill">#0DFFFFFF</color>
+    <color name="glass_row_stroke">#17FFFFFF</color>
+    <color name="glass_group_fill">#33000000</color>
+    <color name="glass_tile_fill">#33000000</color>
+    <color name="glass_ghost_fill">#33000000</color>
+    <color name="sheet_fill">#C2131723</color>
+    <color name="ripple_tint">#33FFFFFF</color>
+    <color name="scrim_top">#8C000000</color>
+    <color name="scrim_bottom">#B3000000</color>
+</resources>
