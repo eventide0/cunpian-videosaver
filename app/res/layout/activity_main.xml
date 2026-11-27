@@ -49,14 +49,16 @@
                     android:text="存片"
                     android:textSize="30sp"
                     android:textStyle="bold"
-                    android:textColor="#FFFFFF"/>
+                    android:textColor="@color/text_primary"
+/>
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:paddingLeft="2dp"
                     android:text="粘贴或分享链接 · 无水印保存"
                     android:textSize="12sp"
-                    android:textColor="#8CFFFFFF"/>
+                    android:textColor="@color/text_secondary"
+/>
             </LinearLayout>
 
             <TextView
@@ -95,8 +97,8 @@
                 android:layout_weight="1"
                 android:background="@null"
                 android:hint="粘贴视频分享链接"
-                android:textColorHint="#73FFFFFF"
-                android:textColor="#FFFFFF"
+                android:textColorHint="@color/text_tertiary"
+                android:textColor="@color/text_primary"
                 android:textSize="13.5sp"
                 android:maxLines="3"
                 android:padding="7dp"/>
@@ -107,7 +109,7 @@
                 android:layout_height="wrap_content"
                 android:text="粘贴"
                 android:textSize="11sp"
-                android:textColor="#D9FFFFFF"
+                android:textColor="@color/text_secondary"
                 android:background="@drawable/btn_ghost"
                 android:paddingLeft="11dp"
                 android:paddingRight="11dp"
@@ -121,7 +123,7 @@
                 android:layout_marginLeft="6dp"
                 android:text="清空"
                 android:textSize="11sp"
-                android:textColor="#D9FFFFFF"
+                android:textColor="@color/text_secondary"
                 android:background="@drawable/btn_ghost"
                 android:paddingLeft="11dp"
                 android:paddingRight="11dp"
@@ -141,7 +143,7 @@
             android:text="解 析"
             android:textSize="15sp"
             android:textStyle="bold"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/text_on_blue"
             android:background="@drawable/btn_cta"/>
 
         <!-- 下载进度汇总：有下载任务时显示，滚动结果区时仍固定可见 -->
@@ -155,7 +157,7 @@
             android:paddingRight="12dp"
             android:paddingTop="6dp"
             android:paddingBottom="6dp"
-            android:textColor="#D9FFFFFF"
+            android:textColor="@color/text_secondary"
             android:textSize="10.5sp"
             android:visibility="gone"/>
 
@@ -181,7 +183,7 @@
                     android:text="结 果"
                     android:textSize="11sp"
                     android:textStyle="bold"
-                    android:textColor="#73FFFFFF"/>
+                    android:textColor="@color/text_tertiary"/>
 
                 <LinearLayout
                     android:id="@+id/results"
@@ -200,9 +202,10 @@
             android:text="历 史"
             android:textSize="11sp"
             android:textStyle="bold"
-            android:textColor="#73FFFFFF"/>
+            android:textColor="@color/text_tertiary"/>
 
-        <!-- 历史区封顶并内部滚动，保证结果区始终有显示空间。 -->
+        <!-- 历史区封顶：旧版 wrap_content 会被超长口令撑到近 1900px，把 weight=1 的结果区压成 0。
+             改 weight 分配 + 内部滚动，保证结果区恒有空间。 -->
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="0dp"
