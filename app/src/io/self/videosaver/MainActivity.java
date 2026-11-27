@@ -15,6 +15,7 @@ import android.graphics.Shader;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.os.Environment;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -35,10 +36,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/** 存片主界面：浅玻璃 + scrim 分层；壁纸/模糊收进底部设置面板。 */
+/** 存片 v0.3.3：仿 iOS 浅玻璃 + scrim 分层；壁纸/模糊收进底部设置面板。 */
 public class MainActivity extends Activity {
 
     private static final int REQ_WALLPAPER = 41;
+    /** 验收脚本按这个 tag 抓日志（scripts/acceptance.ps1），勿删。 */
+    private static final String TAG = "CunPian";
 
     private EditText mInput;
     private LinearLayout mResults;
@@ -127,6 +130,7 @@ public class MainActivity extends Activity {
         String shared = it.getStringExtra(Intent.EXTRA_TEXT);
         if (shared == null || shared.trim().isEmpty()) return;
         String text = shared.trim();
+        Log.i(TAG, "PARSE_START " + text);
         mInput.setText(text);
         parseAsync(text);
     }
@@ -236,6 +240,7 @@ public class MainActivity extends Activity {
     /** 玻璃分层：壁纸 GPU 叠加 高斯模糊 N px + 饱和 180%，再由 scrim 统一压暗。 */
     private void applyGlassBlur(ImageView wall) {
         if (Build.VERSION.SDK_INT < 31) {
+            Log.i(TAG, "BLUR_SKIP sdk=" + Build.VERSION.SDK_INT);
             return;
         }
         try {
@@ -244,8 +249,10 @@ public class MainActivity extends Activity {
             RenderEffect blur = RenderEffect.createBlurEffect(mBlurPx, mBlurPx, Shader.TileMode.CLAMP);
             RenderEffect fx = RenderEffect.createColorFilterEffect(new ColorMatrixColorFilter(cm), blur);
             wall.setRenderEffect(fx);
-        } catch (Throwable ignored) {
-            // 模糊不可用时由 scrim 保底
+            Log.i(TAG, "BLUR_OK px=" + mBlurPx);
+        } catch (Throwable e) {
+            // 模糊失败不能静默：失败时靠 scrim 保底，日志要能看见
+            Log.i(TAG, "BLUR_FAIL " + e);
         }
     }
 
@@ -281,7 +288,7 @@ public class MainActivity extends Activity {
         TextView lt = new TextView(this);
         lt.setText("  正在解析…");
         lt.setTextSize(13);
-        lt.setTextColor(0xB3FFFFFF);
+        lt.setTextColor(getColor(R.color.text_secondary));
         lr.addView(lt);
         loading.addView(lr, matchWrap());
         mResults.addView(loading, matchWrap());
@@ -301,10 +308,14 @@ public class MainActivity extends Activity {
             runOnUiThread(new Runnable() { @Override public void run() {
                 mResults.removeAllViews();
                 if (fr != null) {
+                    Log.i(TAG, "PARSE_OK platform=" + fr.platform + " items=" + fr.items.size()
+                            + " first=" + (fr.items.isEmpty() ? "-" : fr.items.get(0).label)
+                            + " title=" + fr.title);
                     renderResult(fr);
                     History.add(MainActivity.this, text);
                     renderHistory();
                 } else {
+                    Log.i(TAG, "PARSE_FAIL " + ferr);
                     LinearLayout box = groupContainer();
                     TextView et = new TextView(MainActivity.this);
                     et.setText("解析失败：" + ferr);
@@ -332,7 +343,7 @@ public class MainActivity extends Activity {
         TextView t = new TextView(this);
         t.setText("粘贴链接，开始解析\n支持抖音 · B站");
         t.setTextSize(13);
-        t.setTextColor(0x73FFFFFF);
+        t.setTextColor(getColor(R.color.text_tertiary));
         t.setGravity(Gravity.CENTER);
         int p = dp(18);
         t.setPadding(p, p, p, p);
@@ -347,7 +358,7 @@ public class MainActivity extends Activity {
         title.setText(r.title);
         title.setTextSize(13.5f);
         title.setTypeface(null, android.graphics.Typeface.BOLD);
-        title.setTextColor(0xFFFFFFFF);
+        title.setTextColor(getColor(R.color.text_primary));
         int p = dp(14);
         title.setPadding(p, p, p, dp(2));
         card.addView(title, matchWrap());
@@ -356,7 +367,7 @@ public class MainActivity extends Activity {
         String m = (r.author == null || r.author.isEmpty()) ? "" : "@" + r.author + " · ";
         meta.setText(m + r.platform + " · 可下载 " + r.items.size() + " 项");
         meta.setTextSize(10.5f);
-        meta.setTextColor(0x73FFFFFF);
+        meta.setTextColor(getColor(R.color.text_tertiary));
         meta.setPadding(p, 0, p, dp(6));
         card.addView(meta, matchWrap());
 
@@ -369,7 +380,7 @@ public class MainActivity extends Activity {
         noteBtn.setTextSize(10.5f);
         noteBtn.setGravity(Gravity.CENTER);
         noteBtn.setBackgroundResource(R.drawable.btn_ghost);
-        noteBtn.setTextColor(0xBFFFFFFF);
+        noteBtn.setTextColor(getColor(R.color.text_secondary));
         noteBtn.setPadding(dp(10), dp(5), dp(10), dp(5));
         noteRow.addView(noteBtn, wrapWrap());
         pressScale(noteBtn, 0.94f);
@@ -398,7 +409,7 @@ public class MainActivity extends Activity {
             TextView cap = new TextView(this);
             cap.setText("图片 · " + imgs.size() + " 张（点开看大图）");
             cap.setTextSize(10.5f);
-            cap.setTextColor(0x73FFFFFF);
+            cap.setTextColor(getColor(R.color.text_tertiary));
             cap.setPadding(p, dp(2), p, dp(4));
             card.addView(cap, matchWrap());
             card.addView(buildImageGrid(r, imgs), matchWrap());
@@ -474,6 +485,7 @@ public class MainActivity extends Activity {
                 final Bitmap b = Http.fetchBitmap(mi.url, h, 240);
                 final Bitmap loaded = b;
                 if (loaded != null) {
+                    Log.i(TAG, "THUMB_OK " + loaded.getWidth() + "x" + loaded.getHeight());
                     runOnUiThread(new Runnable() { @Override public void run() {
                         iv.setImageBitmap(loaded);
                         iv.setContentDescription("图片缩略图已加载");
@@ -483,6 +495,7 @@ public class MainActivity extends Activity {
                 runOnUiThread(new Runnable() { @Override public void run() {
                     iv.setContentDescription("图片缩略图加载失败");
                 }});
+                Log.i(TAG, "THUMB_FAIL " + (e.getMessage() != null ? e.getMessage() : e));
             }
         }}).start();
     }
@@ -506,7 +519,7 @@ public class MainActivity extends Activity {
         bar.setPadding(bp, bp, bp, bp);
         final TextView counter = new TextView(this);
         counter.setTextSize(12);
-        counter.setTextColor(0xB3FFFFFF);
+        counter.setTextColor(getColor(R.color.text_secondary));
         counter.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         TextView prev = new TextView(this);
         prev.setText("‹ 上一张");
@@ -520,7 +533,7 @@ public class MainActivity extends Activity {
         for (android.view.View b : btns) {
             TextView tv = (TextView) b;
             tv.setTextSize(12);
-            tv.setTextColor(0xFFFFFFFF);
+            tv.setTextColor(getColor(R.color.text_on_blue));
             tv.setPadding(dp(10), dp(8), dp(10), dp(8));
             bar.addView(tv, wrapWrap());
         }
@@ -567,8 +580,8 @@ public class MainActivity extends Activity {
                 if (mi.referer != null) h.put("Referer", mi.referer);
                 final Bitmap b = Http.fetchBitmap(mi.url, h, 0);
                 if (b != null) runOnUiThread(new Runnable() { @Override public void run() { iv.setImageBitmap(b); }});
-            } catch (Exception ignored) {
-                // 加载失败时保留上一帧
+            } catch (Exception e) {
+                Log.i(TAG, "PREVIEW_FAIL " + (e.getMessage() != null ? e.getMessage() : e));
             }
         }}).start();
     }
@@ -592,12 +605,12 @@ public class MainActivity extends Activity {
         TextView nm = new TextView(this);
         nm.setText(mi.label);
         nm.setTextSize(13);
-        nm.setTextColor(0xFFFFFFFF);
+        nm.setTextColor(getColor(R.color.text_primary));
         mid.addView(nm, wrapWrap());
         TextView ds = new TextView(this);
         ds.setText(mi.ext.toUpperCase() + " · 存到 Downloads/存片");
         ds.setTextSize(10.5f);
-        ds.setTextColor(0x73FFFFFF);
+        ds.setTextColor(getColor(R.color.text_tertiary));
         mid.addView(ds, wrapWrap());
         LinearLayout.LayoutParams midp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
         midp.leftMargin = dp(11);
@@ -610,7 +623,7 @@ public class MainActivity extends Activity {
             au.setTextSize(11);
             au.setGravity(Gravity.CENTER);
             au.setBackgroundResource(R.drawable.btn_ghost);
-            au.setTextColor(0xBFFFFFFF);
+            au.setTextColor(getColor(R.color.text_secondary));
             au.setPadding(dp(10), dp(7), dp(10), dp(7));
             LinearLayout.LayoutParams aulp = new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -628,7 +641,7 @@ public class MainActivity extends Activity {
         dl.setGravity(Gravity.CENTER);
         dl.setMinWidth(dp(78));   // 进度文字比"下载"长，固定最小宽度避免行内抖动
         dl.setBackgroundResource(main ? R.drawable.btn_dl : R.drawable.btn_ghost);
-        dl.setTextColor(main ? getColor(R.color.blue) : 0xBFFFFFFF);
+        dl.setTextColor(main ? getColor(R.color.blue) : getColor(R.color.text_secondary));
         dl.setPadding(dp(12), dp(7), dp(12), dp(7));
         row.addView(dl, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         pressScale(dl, 0.94f);
@@ -645,7 +658,7 @@ public class MainActivity extends Activity {
 
     private View hairline() {
         View v = new View(this);
-        v.setBackgroundColor(0x1FFFFFFF);
+        v.setBackgroundColor(getColor(R.color.glass_tile_fill));
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 1);
         lp.leftMargin = dp(14);
@@ -690,6 +703,7 @@ public class MainActivity extends Activity {
 
             DownloadManager dm = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
             dm.enqueue(req);
+            Log.i(TAG, "DL_ENQUEUE " + fname);
             Toast.makeText(this, "已加入下载队列", Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
             Toast.makeText(this, "下载失败：" + e.getMessage(), Toast.LENGTH_LONG).show();
@@ -759,6 +773,7 @@ public class MainActivity extends Activity {
         if (mDlActive > 0) sb.append(" · 进行中 ").append(mDlActive);
         if (mDlFailed > 0) sb.append(" · 失败 ").append(mDlFailed);
         mDlSummary.setText(sb.toString());
+        Log.i(TAG, "DL_SUMMARY " + sb);
     }
 
     /** 每项下载按钮下的细进度条。 */
@@ -838,11 +853,13 @@ public class MainActivity extends Activity {
                 if ("image".equals(mi.type)) mime = "image/jpeg";
                 else if ("audio".equals(mi.type)) mime = "audio/mpeg";
                 saveMediaToDownloads(tmp, fname, mime);
+                Log.i(TAG, "DL_OK " + fname + " " + sz + "B");
                 runOnUiThread(new Runnable() { @Override public void run() {
                     dlFinish(btn, bar, true, "✓ 已存");
                     Toast.makeText(MainActivity.this, "已存到 Downloads/存片", Toast.LENGTH_SHORT).show();
                 }});
             } catch (final Exception e) {
+                Log.i(TAG, "DL_FAIL " + (e.getMessage() != null ? e.getMessage() : e));
                 runOnUiThread(new Runnable() { @Override public void run() {
                     dlFinish(btn, bar, false, "失败·重试");
                     Toast.makeText(MainActivity.this, "下载失败：" + (e.getMessage() != null ? e.getMessage() : e),
@@ -885,7 +902,7 @@ public class MainActivity extends Activity {
             TextView t = new TextView(this);
             t.setText("暂无历史");
             t.setTextSize(12);
-            t.setTextColor(0x73FFFFFF);
+            t.setTextColor(getColor(R.color.text_tertiary));
             int p = dp(14);
             t.setPadding(p, dp(11), p, dp(11));
             mHistory.addView(t, matchWrap());
@@ -907,6 +924,7 @@ public class MainActivity extends Activity {
             ic.setTypeface(null, android.graphics.Typeface.BOLD);
             ic.setGravity(Gravity.CENTER);
             ic.setBackgroundResource(R.drawable.ic_tile);
+            ic.setTextColor(getColor(R.color.text_primary));
             LinearLayout.LayoutParams iclp = new LinearLayout.LayoutParams(dp(30), dp(30));
             iclp.rightMargin = dp(11);
             mHistory.addView(ic, iclp);
@@ -914,13 +932,13 @@ public class MainActivity extends Activity {
             TextView tx = new TextView(this);
             tx.setText(shorten(link, 40));
             tx.setTextSize(12);
-            tx.setTextColor(0xBFFFFFFF);
+            tx.setTextColor(getColor(R.color.text_secondary));
             row.addView(tx, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
 
             TextView chev = new TextView(this);
             chev.setText("›");
             chev.setTextSize(15);
-            chev.setTextColor(0x59FFFFFF);
+            chev.setTextColor(getColor(R.color.text_quaternary));
             row.addView(chev, wrapWrap());
 
             row.setOnClickListener(new View.OnClickListener() {
