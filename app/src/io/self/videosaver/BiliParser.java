@@ -8,8 +8,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * B 站解析器：BV → view 拿 cid → playurl(fnval=1, platform=html5, high_quality=1) → 单文件 mp4。
- * Referer 只用于 view/playurl 接口请求，mp4 直链下载不需要。
+ * B 站解析器：
+ * BV → view 拿 cid → playurl(fnval=1, platform=html5, high_quality=1, qn=80) → 单文件 mp4。
+ * 下面的 Referer 仅用于 view/playurl 接口请求，mp4 直链下载不需要。
  */
 public class BiliParser implements Parser {
 
@@ -45,9 +46,10 @@ public class BiliParser implements Parser {
         if (cid == 0) throw new Exception("没拿到 cid（可能是多P，暂只支持第一P）");
 
         // 2) playurl：单文件 mp4（免 ffmpeg 合流，APK 省体积）
+        // qn=80：不传则 B 站默认回 16（360P）；传高码后服务端自动回落到视频支持的最高档，无需登录/签名
         JSONObject play = new JSONObject(Http.get(
                 "https://api.bilibili.com/x/player/playurl?avid=" + aid + "&cid=" + cid
-                        + "&fnval=1&platform=html5&high_quality=1", h, true));
+                        + "&fnval=1&platform=html5&high_quality=1&qn=80", h, true));
         if (play.optInt("code", -1) != 0) throw new Exception("B站播放地址接口失败: " + play.optString("message"));
         JSONObject pdata = play.optJSONObject("data");
         if (pdata == null) throw new Exception("B站播放无数据");
@@ -56,8 +58,14 @@ public class BiliParser implements Parser {
         if (durl == null || durl.length() == 0) throw new Exception("B站没有返回可下载地址");
         String durl0 = durl.optJSONObject(0).optString("url");
 
-        // 文案必须取自本次实际返回的 quality 码；accept_description 只是"站点可提供档位"，不代表这次给了哪一档
-        String quality = qualityName(pdata.optInt("quality", 0));
+        // data.quality 可能虚标，用 mp4 头里的真实分辨率为准
+        // 用 Range 取 mp4 头解析 moov，拿真实宽高；失败退回档位名
+        String label = "视频 " + qualityName(pdata.optInt("quality", 0));
+        try {
+            byte[] head = Http.fetchHead(durl0, h, 8 * 1024);
+            String real = Http.mp4Size(head);
+            if (real != null) label = "视频 " + real;
+        } catch (Exception ignored) {}
 
         ParseResult r = new ParseResult();
         r.platform = "B站";
@@ -65,11 +73,11 @@ public class BiliParser implements Parser {
         JSONObject owner = data.optJSONObject("owner");
         r.author = owner != null ? owner.optString("name", "") : "";
         r.cover = data.optString("pic", "");
-        r.items.add(new Parser.MediaItem("视频 " + quality, durl0, "video", "mp4", "https://www.bilibili.com/"));
+        r.items.add(new Parser.MediaItem(label, durl0, "video", "mp4", "https://www.bilibili.com/"));
         return r;
     }
 
-    /** B 站清晰度码 → 中文档位。 */
+    /** B 站清晰度码 → 中文档位；html5 无登录传 qn=80 可取视频最高公开档。 */
     private static String qualityName(int q) {
         switch (q) {
             case 6:   return "240P";

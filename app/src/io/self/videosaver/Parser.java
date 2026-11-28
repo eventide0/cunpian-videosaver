@@ -3,7 +3,7 @@ package io.self.videosaver;
 import java.util.ArrayList;
 import java.util.List;
 
-/** 解析器抽象：按平台一个实现，可注册、可替换。 */
+/** 解析器抽象：按平台一个实现，可注册/可替换（热更的挂载点）。 */
 public interface Parser {
 
     /** 是否能处理这个链接。 */

@@ -5,7 +5,7 @@
 ## 功能
 
 - 抖音：视频短链、PC 链接、图文作品（图片 + 原声）
-- B站：BV 号、b23 短链（360P 单文件 mp4）
+- B站：BV 号、b23 短链（单文件 mp4，自动取最高公开档）
 - 每项独立下载，按钮上显示百分比进度，顶部有「已完成 X/Y · 进行中 Z · 失败 F」汇总
 - 图片缩略图网格，点开全屏、左右滑动切换
 - 「存文案到便签」：把作品文案通过系统分享交给便签 / 备忘录 App
@@ -15,6 +15,8 @@
 ## 下载
 
 到 [Releases 页面](https://github.com/eventide0/cunpian-videosaver/releases) 下载最新版本的 APK 安装即可。Android 8.0 以上。
+
+当前版本：v0.5.3。也可直接下载 [apk/cunpian-v0.5.3.apk](apk/cunpian-v0.5.3.apk)。APK 为 debug 签名，仅供个人使用。
 
 ## 构建
 

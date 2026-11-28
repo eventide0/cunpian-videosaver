@@ -9,8 +9,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 抖音解析器：短链→数字 id → ttwid → 分享页 SSR(_ROUTER_DATA) → play_addr.uri → play 接口 302。
- * play 接口需要 uri 而非数字 id；分享页需要 ttwid；UA 使用移动 Chrome。
+ * 抖音解析器：
+ * 短链→数字id → ttwid → iesdouyin 分享页 SSR(_ROUTER_DATA) → play_addr.uri → snssdk play 无水印 302。
+ * 坑：play 接口必须传 uri 不能传数字 id；分享页必须带 ttwid；UA 用移动 Chrome。
  */
 public class DouyinParser implements Parser {
 
@@ -89,7 +90,8 @@ public class DouyinParser implements Parser {
             JSONObject playAddr = video.optJSONObject("play_addr");
             if (playAddr != null) {
                 String uri = playAddr.optString("uri", "");
-                // 图文作品没有视频流：uri 是原声 mp3 直链，不是 video_id，直接作为音频项。
+                // 图文作品没有视频流：uri 是原声 mp3 直链，不是 video_id。
+                // 拼进 play 接口只会拿到空响应，所以直接当音频给出，不造假的视频项。
                 if (uri.startsWith("http://") || uri.startsWith("https://")) {
                     r.items.add(new Parser.MediaItem("音频 原声", uri, "audio", "mp3", null));
                 } else if (!uri.isEmpty()) {
@@ -173,7 +175,7 @@ public class DouyinParser implements Parser {
             StringBuilder cookies = new StringBuilder();
             Http.postCaptureCookie("https://ttwid.bytedance.com/ttwid/union/register/", body, h, cookies);
             Matcher m = TTWID.matcher(cookies);
-            // 保留百分号编码原值，避免拼 Cookie 时产生差异
+            // 保留百分号编码原值，避免解码后再拼 Cookie 改变语义
             if (m.find()) return m.group(1);
         } catch (Exception ignored) {}
         return null;

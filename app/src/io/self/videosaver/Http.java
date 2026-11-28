@@ -9,6 +9,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
@@ -76,40 +77,121 @@ public final class Http {
         return downloadToFile(url, headers, dest, null);
     }
 
-    /** 带进度回调的二进制下载。回调发生在下载线程，调用方需自行切回 UI 线程。 */
+    /**
+     * 单连接流式下载 + Range 断点续传 + 失败抖动重试。回调发生在下载线程，调用方需自行切回 UI 线程。
+     *
+     * 弱网优化的关键是"少传字节"：连接断了从已落盘偏移继续，绝不删文件从头重下。
+     * 没有 HEAD/测速预探测 —— 那两段没有进度回调，在慢网会让 UI 长时间停在 0%。
+     * gzip 或服务端忽略 Range（回 200）时退回从头覆盖，进度仍按 Content-Length 正常上报。
+     */
     public static long downloadToFile(String url, Map<String, String> headers, File dest,
                                       ProgressCallback cb) throws IOException {
-        HttpURLConnection c = open(url, "GET", headers, true);
+        IOException last = null;
+        long committed = dest.exists() ? dest.length() : 0;
+        for (int attempt = 0; attempt < 3; attempt++) {
+            HttpURLConnection c = null;
+            InputStream in = null;
+            OutputStream os = null;
+            try {
+                Map<String, String> h = new HashMap<String, String>();
+                if (headers != null) h.putAll(headers);
+                if (committed > 0) h.put("Range", "bytes=" + committed + "-");
+                c = open(url, "GET", h, true);
+                int code = c.getResponseCode();
+                if (code == 416) {           // 偏移越界（文件已完整）：从头重来
+                    committed = 0;
+                    throw new IOException("HTTP 416 Range 越界");
+                }
+                if (code >= 400) throw new IOException("HTTP " + code);
+                boolean partial = (code == 206);
+                in = c.getInputStream();
+                String enc = c.getContentEncoding();
+                boolean gz = enc != null && enc.toLowerCase().contains("gzip");
+                if (gz) in = new GZIPInputStream(in);
+                long len = c.getHeaderFieldLong("Content-Length", -1);
+                long offset = (partial && !gz) ? committed : 0;
+                long total = gz ? -1 : (partial && len > 0 ? offset + len : len);
+                os = new java.io.FileOutputStream(dest, offset > 0);
+                byte[] buf = new byte[16384];
+                long done = offset;
+                int n;
+                while ((n = in.read(buf)) > 0) {
+                    os.write(buf, 0, n);
+                    done += n;
+                    if (cb != null) {
+                        int pct = total > 0 ? (int) (done * 100 / total) : -1;
+                        if (pct > 100) pct = 100;
+                        cb.onProgress(pct, done, total);
+                    }
+                }
+                os.flush();
+                return done;
+            } catch (IOException e) {
+                last = e;
+                committed = dest.exists() ? dest.length() : 0;
+                if (attempt < 2) {
+                    // 抖动退避：避免弱网下重试撞在同一拥塞时刻
+                    try { Thread.sleep(300 + (long) (Math.random() * 500) + attempt * 700); }
+                    catch (InterruptedException ignored) { Thread.currentThread().interrupt(); break; }
+                }
+            } finally {
+                try { if (in != null) in.close(); } catch (IOException ignored) {}
+                try { if (os != null) os.close(); } catch (IOException ignored) {}
+                if (c != null) c.disconnect();
+            }
+        }
+        throw last != null ? last : new IOException("下载失败");
+    }
+
+    /**
+     * Range 取视频头部字节，用于解析 mp4 moov 里的真实分辨率。
+     * 服务器忽略 Range（回 200）时只读前 maxBytes 就断开，不会把整个文件拉完。
+     */
+    public static byte[] fetchHead(String url, Map<String, String> headers, int maxBytes) throws IOException {
+        Map<String, String> h = new HashMap<String, String>();
+        if (headers != null) h.putAll(headers);
+        h.put("Range", "bytes=0-" + (maxBytes - 1));
+        HttpURLConnection c = open(url, "GET", h, true);
         InputStream in = null;
-        java.io.OutputStream os = null;
         try {
             int code = c.getResponseCode();
             in = code >= 400 ? c.getErrorStream() : c.getInputStream();
             if (in == null) throw new IOException("HTTP " + code + " 无响应体");
-            String enc = c.getContentEncoding();
-            boolean gz = enc != null && enc.toLowerCase().contains("gzip");
-            if (gz) in = new GZIPInputStream(in);
-            // gzip 解压后字节数与 Content-Length 不一致，这类响应用未知总长
-            long expect = gz ? -1 : c.getHeaderFieldLong("Content-Length", -1);
-            os = new java.io.FileOutputStream(dest);
+            java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
             byte[] buf = new byte[16384];
-            long total = 0;
-            int n;
-            while ((n = in.read(buf)) > 0) {
-                os.write(buf, 0, n);
+            int n, total = 0;
+            while (total < maxBytes && (n = in.read(buf, 0, Math.min(buf.length, maxBytes - total))) > 0) {
+                bos.write(buf, 0, n);
                 total += n;
-                if (cb != null) {
-                    int pct = expect > 0 ? (int) (total * 100 / expect) : -1;
-                    if (pct > 100) pct = 100;
-                    cb.onProgress(pct, total, expect);
-                }
             }
-            return total;
+            return bos.toByteArray();
         } finally {
             try { if (in != null) in.close(); } catch (IOException ignored) {}
-            try { if (os != null) os.close(); } catch (IOException ignored) {}
             c.disconnect();
         }
+    }
+
+    /**
+     * 从 mp4 头部字节里取真实编码分辨率，返回 "宽x高"；解析不到返回 null。
+     * 只读 stsd 里的 avc1/hvc1/av01（编码盒）；tkhd 是显示尺寸，B站会写成 404x720 这种错值，不能用。
+     */
+    public static String mp4Size(byte[] b) {
+        if (b == null) return null;
+        // ftyp 兼容列表里第一个 "avc1" 不是 box，需跳过；找到多个时取宽高都合理的
+        for (int i = 0; i + 36 <= b.length; i++) {
+            boolean codec = (b[i] == 'a' && b[i + 1] == 'v' && b[i + 2] == 'c' && b[i + 3] == '1')
+                    || (b[i] == 'h' && b[i + 1] == 'e' && b[i + 2] == 'v' && b[i + 3] == '1')
+                    || (b[i] == 'h' && b[i + 1] == 'v' && b[i + 2] == 'c' && b[i + 3] == '1')
+                    || (b[i] == 'a' && b[i + 1] == 'v' && b[i + 2] == '0' && b[i + 3] == '1');
+            if (!codec) continue;
+            int boxSize = ((b[i - 4] & 0xff) << 24) | ((b[i - 3] & 0xff) << 16)
+                    | ((b[i - 2] & 0xff) << 8) | (b[i - 1] & 0xff);
+            if (boxSize < 80 || boxSize > 4096) continue;
+            int W = ((b[i + 28] & 0xff) << 8) | (b[i + 29] & 0xff);
+            int H = ((b[i + 30] & 0xff) << 8) | (b[i + 31] & 0xff);
+            if (W >= 320 && W <= 7680 && H >= 240 && H <= 4320) return W + "x" + H;
+        }
+        return null;
     }
 
     /** 下载并解码图片为 Bitmap。reqSize>0 时按目标边长缩放（缩略图省内存），0 表示原图。 */

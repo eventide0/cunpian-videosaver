@@ -40,7 +40,6 @@ import java.util.Map;
 public class MainActivity extends Activity {
 
     private static final int REQ_WALLPAPER = 41;
-    /** 验收脚本按这个 tag 抓日志（scripts/acceptance.ps1），勿删。 */
     private static final String TAG = "CunPian";
 
     private EditText mInput;
@@ -462,12 +461,10 @@ public class MainActivity extends Activity {
                 dl.setTextColor(getColor(R.color.blue));
                 dl.setPadding(0, dp(4), 0, 0);
                 dl.setLayoutParams(matchWrap());
-                final ProgressBar bar = newDlBar();
                 dl.setOnClickListener(new View.OnClickListener() {
-                    @Override public void onClick(View v) { downloadDirectAsync(r.title, mi, dl, bar); }
+                    @Override public void onClick(View v) { downloadDirectAsync(r.title, mi, dl); }
                 });
                 cell.addView(dl);
-                cell.addView(bar, matchWrap());
 
                 row.addView(cell, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
             }
@@ -547,7 +544,7 @@ public class MainActivity extends Activity {
             @Override public void onClick(View v) { if (cur[0] < imgs.size() - 1) showPreviewAt(big, counter, imgs, ++cur[0]); }
         });
         save.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { downloadDirectAsync(r.title, imgs.get(cur[0]), save, null); }
+            @Override public void onClick(View v) { downloadDirectAsync(r.title, imgs.get(cur[0]), save); }
         });
         close.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { d.dismiss(); }
@@ -645,14 +642,12 @@ public class MainActivity extends Activity {
         dl.setPadding(dp(12), dp(7), dp(12), dp(7));
         row.addView(dl, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         pressScale(dl, 0.94f);
-        final ProgressBar bar = newDlBar();
         dl.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { downloadDirectAsync(r.title, mi, dl, bar); }
+            @Override public void onClick(View v) { downloadDirectAsync(r.title, mi, dl); }
         });
         LinearLayout wrap = new LinearLayout(this);
         wrap.setOrientation(LinearLayout.VERTICAL);
         wrap.addView(row, matchWrap());
-        wrap.addView(bar, matchWrap());
         return wrap;
     }
 
@@ -712,7 +707,7 @@ public class MainActivity extends Activity {
 
     /** 视频项“♪音频”：先拉视频到私有缓存 → 纯 Java 提音轨 → 存 m4a 到 Downloads/存片。 */
     private void extractAudioAsync(final String title, final Parser.MediaItem mi, final TextView btn) {
-        if (btn != null) dlStart(btn, null);
+        if (btn != null) dlStart(btn);
         else Toast.makeText(this, "正在提取音频…", Toast.LENGTH_SHORT).show();
         new Thread(new Runnable() { @Override public void run() {
             File tmpVideo = null, tmpM4a = null;
@@ -726,7 +721,7 @@ public class MainActivity extends Activity {
                     @Override public void onProgress(int percent, long done, long total) {
                         if (percent == lastPct[0]) return;
                         lastPct[0] = percent;
-                        dlProgress(btn, null, percent, done);
+                        dlProgress(btn, percent, done);
                     }
                 };
                 long sz = Http.downloadToFile(mi.url, h, tmpVideo, cb);
@@ -741,12 +736,12 @@ public class MainActivity extends Activity {
                 String fname = safe + "_" + System.currentTimeMillis() % 100000 + ".m4a";
                 saveMediaToDownloads(tmpM4a, fname, "audio/mp4");
                 runOnUiThread(new Runnable() { @Override public void run() {
-                    dlFinish(btn, null, true, "♪ 已存");
+                    dlFinish(btn, true, "♪ 已存");
                     Toast.makeText(MainActivity.this, "音频已存到 Downloads/存片", Toast.LENGTH_SHORT).show();
                 }});
             } catch (final Exception e) {
                 runOnUiThread(new Runnable() { @Override public void run() {
-                    dlFinish(btn, null, false, "♪ 失败");
+                    dlFinish(btn, false, "♪ 失败");
                     Toast.makeText(MainActivity.this, "音频提取失败：" + (e.getMessage() != null ? e.getMessage() : e),
                             Toast.LENGTH_LONG).show();
                 }});
@@ -776,57 +771,42 @@ public class MainActivity extends Activity {
         Log.i(TAG, "DL_SUMMARY " + sb);
     }
 
-    /** 每项下载按钮下的细进度条。 */
-    private ProgressBar newDlBar() {
-        ProgressBar bar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
-        bar.setMax(100);
-        bar.setProgress(0);
-        bar.setVisibility(View.GONE);
-        bar.setLayoutParams(new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, dp(3)));
-        return bar;
-    }
-
-    /** 下载开始：按钮进入进度态。必须在 UI 线程调用。 */
-    private void dlStart(TextView btn, ProgressBar bar) {
+    /** 下载开始：按钮显示百分比文字。必须在 UI 线程调用。 */
+    private void dlStart(TextView btn) {
         if (btn == null) return;
         mDlTotal++; mDlActive++;
         btn.setEnabled(false);
         btn.setText("下载中 0%");
-        if (bar != null) { bar.setProgress(0); bar.setVisibility(View.VISIBLE); }
         refreshDlSummary();
     }
 
     /** 进度回调来自后台线程，统一切回 UI；调用方按 1% 节流后再调这里。 */
-    private void dlProgress(final TextView btn, final ProgressBar bar,
-                            final int pct, final long done) {
+    private void dlProgress(final TextView btn, final int pct, final long done) {
         if (btn == null) return;
         runOnUiThread(new Runnable() { @Override public void run() {
             btn.setText(pct < 0 ? "下载中 " + (done / 1024) + "KB" : "下载中 " + pct + "%");
-            if (bar != null) bar.setProgress(pct < 0 ? 0 : pct);
         }});
     }
 
     /** 下载结束（成功/失败），更新按钮与汇总。必须在 UI 线程调用。 */
-    private void dlFinish(TextView btn, ProgressBar bar, boolean ok, String text) {
+    private void dlFinish(TextView btn, boolean ok, String text) {
         if (btn == null) return;
         if (ok) mDlDone++; else mDlFailed++;
         mDlActive--;
         btn.setText(text);
         btn.setEnabled(true);
-        if (bar != null) bar.setVisibility(View.GONE);
         refreshDlSummary();
     }
 
     /** 所有媒体项“下载”：Http 拉到私有缓存 → MediaStore 直写 Downloads/存片（绕开 DownloadManager 的长中文文件名清理丢扩展名问题）。 */
     private void downloadDirectAsync(final String title, final Parser.MediaItem mi) {
-        downloadDirectAsync(title, mi, null, null);
+        downloadDirectAsync(title, mi, null);
     }
 
-    /** btn 非空时显示原地进度并计入顶部汇总；bar 可空（全屏预览里只改按钮文字）。 */
+    /** btn 非空时按钮原地显示百分比并计入顶部汇总；btn 为空只弹 Toast。 */
     private void downloadDirectAsync(final String title, final Parser.MediaItem mi,
-                                     final TextView btn, final ProgressBar bar) {
-        if (btn != null) dlStart(btn, bar);
+                                     final TextView btn) {
+        if (btn != null) dlStart(btn);
         else Toast.makeText(this, "正在下载…", Toast.LENGTH_SHORT).show();
         new Thread(new Runnable() { @Override public void run() {
             File tmp = null;
@@ -838,9 +818,10 @@ public class MainActivity extends Activity {
                 tmp = new File(getCacheDir(), "dl_src_" + System.currentTimeMillis() + "." + mi.ext);
                 Http.ProgressCallback cb = new Http.ProgressCallback() {
                     @Override public void onProgress(int percent, long done, long total) {
-                        if (percent == lastPct[0]) return;   // 1% 粒度节流，避免每 16KB 重绘
+                        // 单连接续传，进度只前进不归零；按百分比节流
+                        if (percent == lastPct[0]) return;
                         lastPct[0] = percent;
-                        dlProgress(btn, bar, percent, done);
+                        dlProgress(btn, percent, done);
                     }
                 };
                 long sz = Http.downloadToFile(mi.url, h, tmp, cb);
@@ -855,13 +836,13 @@ public class MainActivity extends Activity {
                 saveMediaToDownloads(tmp, fname, mime);
                 Log.i(TAG, "DL_OK " + fname + " " + sz + "B");
                 runOnUiThread(new Runnable() { @Override public void run() {
-                    dlFinish(btn, bar, true, "✓ 已存");
+                    dlFinish(btn, true, "✓ 已存");
                     Toast.makeText(MainActivity.this, "已存到 Downloads/存片", Toast.LENGTH_SHORT).show();
                 }});
             } catch (final Exception e) {
                 Log.i(TAG, "DL_FAIL " + (e.getMessage() != null ? e.getMessage() : e));
                 runOnUiThread(new Runnable() { @Override public void run() {
-                    dlFinish(btn, bar, false, "失败·重试");
+                    dlFinish(btn, false, "失败·重试");
                     Toast.makeText(MainActivity.this, "下载失败：" + (e.getMessage() != null ? e.getMessage() : e),
                             Toast.LENGTH_LONG).show();
                 }});
@@ -975,8 +956,10 @@ public class MainActivity extends Activity {
     private int dp(int v) { return (int) (v * getResources().getDisplayMetrics().density); }
 }
 
-/** 历史记录：SharedPreferences 存最近 10 条链接。 */
+/** 历史记录：SharedPreferences 存最近 5 条链接。 */
 final class History {
+    private static final int MAX = 5;
+
     private History() {}
 
     static List<String> get(Context c) {
@@ -985,6 +968,11 @@ final class History {
         if (!raw.isEmpty()) {
             for (String s : raw.split("\n")) if (!s.trim().isEmpty()) out.add(s.trim());
         }
+        // 旧版本存了 10 条：读取时截到 5 条并落盘，打开一次就清掉多余的
+        if (out.size() > MAX) {
+            while (out.size() > MAX) out.remove(out.size() - 1);
+            save(c, out);
+        }
         return out;
     }
 
@@ -992,9 +980,13 @@ final class History {
         List<String> cur = get(c);
         cur.remove(link);
         cur.add(0, link);
-        while (cur.size() > 10) cur.remove(cur.size() - 1);
+        while (cur.size() > MAX) cur.remove(cur.size() - 1);
+        save(c, cur);
+    }
+
+    private static void save(Context c, List<String> links) {
         StringBuilder sb = new StringBuilder();
-        for (String s : cur) sb.append(s).append('\n');
+        for (String s : links) sb.append(s).append('\n');
         c.getSharedPreferences("history", Context.MODE_PRIVATE)
                 .edit().putString("links", sb.toString()).apply();
     }

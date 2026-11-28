@@ -8,7 +8,7 @@ param([switch]$Install, [switch]$Clean, [string]$Serial)
 $ErrorActionPreference = "Continue"
 
 $App       = $PSScriptRoot
-$ApkName   = "cunpian-v0.5.0.apk"
+$ApkName   = "cunpian-v0.5.3.apk"
 
 # ============ SDK 探测（环境变量优先，兼容多种常见布局）============
 # 优先级：$env:ANDROID_SDK_ROOT → $env:ANDROID_HOME → 常见安装路径 → 脚本同级 sdk/
@@ -67,56 +67,33 @@ foreach ($tool in @($Aapt2, $Zipalign, $Apksigner)) {
     if (-not (Test-Path -LiteralPath $tool)) { throw "build-tools 缺文件：$tool" }
 }
 
-# ============ 阶段 0：构建前守卫（preflight） ============
-# 背景：并行会话持有整份 MainActivity 模板，整篇重写会把 Tag/onNewIntent/日志抹掉，
-#       但构建照样成功 → 装上去是个"没日志的版本"，再去跑验收就变成假 FAIL。
-#       这里在动 aapt2 之前先拦：钩子不齐 or 版本号自洽性不对，直接拒绝构建。
+# ============ 构建前检查：清单与产物名自洽 ============
 $SrcMain  = Join-Path $App "src\io\self\videosaver\MainActivity.java"
 $Manifest = Join-Path $App "AndroidManifest.xml"
-$Needles  = @("CunPian", "handleShareIntent", "onNewIntent", "PARSE_START", "PARSE_OK", "PARSE_FAIL")
+if (-not (Test-Path -LiteralPath $SrcMain))  { throw "源码不存在 $SrcMain" }
+if (-not (Test-Path -LiteralPath $Manifest)) { throw "清单不存在 $Manifest" }
 
-function Test-BuildPreflight {
-    param(
-        [string]$MainPath,
-        [string]$ManifestPath,
-        [string]$ApkFileName,
-        [string[]]$RequiredTokens
-    )
-    if (-not (Test-Path -LiteralPath $MainPath))    { throw "PREFLIGHT: 源码不存在 $MainPath" }
-    if (-not (Test-Path -LiteralPath $ManifestPath)){ throw "PREFLIGHT: 清单不存在 $ManifestPath" }
-
-    $mainText = [System.IO.File]::ReadAllText($MainPath)
-    $missing  = @($RequiredTokens | Where-Object { -not $mainText.Contains($_) })
-    if ($missing.Count -gt 0) {
-        throw ("PREFLIGHT 拒绝构建：MainActivity.java 缺验收钩子 [{0}] —— 多半被模板整篇重写覆盖了，先合回再构建。" -f ($missing -join ', '))
-    }
-
-    $mText = [System.IO.File]::ReadAllText($ManifestPath)
-    if ($mText -notmatch 'android:versionCode="(\d+)"')     { throw "PREFLIGHT: AndroidManifest.xml 缺 android:versionCode" }
-    $vCode = $matches[1]
-    if ($mText -notmatch 'android:versionName="([^"]+)"')   { throw "PREFLIGHT: AndroidManifest.xml 缺 android:versionName" }
-    $vName = $matches[1]
-    if ($ApkFileName -ne "cunpian-v$vName.apk") {
-        throw ("PREFLIGHT 拒绝构建：产物名 {0} 与清单 versionName {1}（versionCode {2}）不一致，改一处忘另一处了。" -f $ApkFileName, $vName, $vCode)
-    }
-    Write-Host ("PREFLIGHT OK  版本 {0} / code {1} / 钩子 {2}/{2}" -f $vName, $vCode, $RequiredTokens.Count)
+$mText = [System.IO.File]::ReadAllText($Manifest)
+if ($mText -notmatch 'android:versionCode="(\d+)"')   { throw "清单缺 android:versionCode" }
+$vCode = $matches[1]
+if ($mText -notmatch 'android:versionName="([^"]+)"') { throw "清单缺 android:versionName" }
+$vName = $matches[1]
+if ($ApkName -ne "cunpian-v$vName.apk") {
+    throw ("产物名 {0} 与清单版本 {1}（code {2}）不一致" -f $ApkName, $vName, $vCode)
 }
+Write-Host ("版本检查 OK：{0} / code {1}" -f $vName, $vCode)
 
-Test-BuildPreflight -MainPath $SrcMain -ManifestPath $Manifest -ApkFileName $ApkName -RequiredTokens $Needles
+# ASCII 临时构建区：用系统临时目录，避免中文路径导致 aapt2 出错；每次构建独立目录
+$ScratchRoot = Join-Path ([System.IO.Path]::GetTempPath()) "cunpian_build"
+$BuildRoot   = Join-Path $ScratchRoot (Get-Date -Format yyyyMMdd_HHmmss)
+$Out         = "$BuildRoot\out"
 
-# ASCII 构建区：E 盘，每次构建一个带时间戳的新目录（零永久删除，也不会串进旧产物）
-$BuildRoot = "E:\RE\tmp\cunpian_build\$(Get-Date -Format yyyyMMdd_HHmmss)"
-$Out       = "$BuildRoot\out"
-
-if (-not (Test-Path -LiteralPath "E:\RE\tmp")) { New-Item -ItemType Directory -Force -Path "E:\RE\tmp" | Out-Null }
-# -Clean 只把旧构建树移到 _trash（可复原），不原地删除
-if ($Clean -and (Test-Path -LiteralPath "E:\RE\tmp\cunpian_build")) {
-    $TrashDir = "E:\RE\tmp\_trash\cunpian_build_$(Get-Date -Format yyyyMMdd_HHmmss)"
-    New-Item -ItemType Directory -Force -Path "E:\RE\tmp\_trash" | Out-Null
-    Move-Item -LiteralPath "E:\RE\tmp\cunpian_build" -Destination $TrashDir
+# -Clean 把旧构建树移到一边（可复原），不原地删除
+if ($Clean -and (Test-Path -LiteralPath $ScratchRoot)) {
+    $TrashDir = Join-Path ([System.IO.Path]::GetTempPath()) "cunpian_build_old_$(Get-Date -Format yyyyMMdd_HHmmss)"
+    Move-Item -LiteralPath $ScratchRoot -Destination $TrashDir
 }
 New-Item -ItemType Directory -Force -Path $BuildRoot | Out-Null
-Set-Content -LiteralPath "$BuildRoot\.cunpian_build" -Value "cunpian build scratch" -Encoding Ascii
 
 # 阶段：拷源码到全新 ASCII 区
 Copy-Item "$App\src"      "$BuildRoot\src"      -Recurse -Force

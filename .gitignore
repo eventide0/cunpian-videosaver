@@ -1,12 +1,26 @@
-# 构建产物与签名密钥（构建脚本会在缺失时自动生成 debug keystore）
+# ===== 内部资料（绝不公开）=====
+00-总览.md
+工作日志.md
+工作日志.md.bak_*
+结论台账.md
+captures/
+scripts/
+workspace/
+preview/
+ios/
+docs/02-候选拆解.md
+docs/B站怎么本地解析.md
+docs/抖音怎么本地解析.md
+docs/工程构建-无Gradle管线.md
+docs/开源-RELEASE说明.md
+docs/开源-解析原理.md
+
+# ===== 构建产物与密钥 =====
 app/build/
 app/debug.keystore
-*.apk
-!apk/*.apk
 *.class
-
-# 临时/系统文件
 *.pyc
 __pycache__/
 Thumbs.db
 .DS_Store
+*.bak_*

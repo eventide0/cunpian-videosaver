@@ -10,7 +10,9 @@ import java.nio.ByteBuffer;
 
 /**
  * 纯 Java 音轨提取：用 Android 自带的 MediaExtractor + MediaMuxer 把 mp4 里的音轨
- * 单独封装成 m4a。零第三方依赖，无需解码。
+ * 单独封装成 m4a。零第三方依赖，APK 体积不变。
+ *
+ * 常见抖音视频源为 vide + soun 双轨，音轨为 AAC，可直接 remux，无需解码。
  */
 public final class AudioExtractor {
 
